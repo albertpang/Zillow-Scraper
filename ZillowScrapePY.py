@@ -1,5 +1,6 @@
 import os
 from bs4 import BeautifulSoup
+from datetime import date
 import numpy as np
 import requests
 import prettify
@@ -85,7 +86,7 @@ class ZillowScraper:
     def PullData(self):
         for soupValue in self.soupDictionary.values():
             self.housing_options = soupValue.find_all('li', 
-                                                        class_ ='ListItem-c11n-8-69-2__sc-10e22w8-0 srp__hpnp3q-0 enEXBq with_constellation', limit=8)
+                                                        class_ ='ListItem-c11n-8-73-8__sc-10e22w8-0 srp__hpnp3q-0 enEXBq with_constellation', limit=8)
             for house in self.housing_options:
                 address = house.find('address', attrs={"data-test":"property-card-addr"}).text
                 rawPrice = house.find('span', attrs={"data-test":"property-card-price"}).text
@@ -95,8 +96,8 @@ class ZillowScraper:
                         link = allLinks.get('href')
                     zestimate = zs.ZestimateCalc(link)
                     self.zestimateDF.append(zestimate)
-                    realtor = house.find(class_ = 'StyledPropertyCardDataArea-c11n-8-69-2__sc-yipmu-0 CtOGF').text
-                    rawbbsf = house.find('span', class_="StyledPropertyCardHomeDetails-c11n-8-69-2__sc-1mlc4v9-0 ereqYj").text
+                    realtor = house.find(class_ = 'StyledPropertyCardDataArea-c11n-8-73-8__sc-yipmu-0 hTcpwx').text
+                    rawbbsf = house.find('span', class_="StyledPropertyCardHomeDetails-c11n-8-73-8__sc-1mlc4v9-0 jlVIIO").text
                     bbsf = zs.StringReplacement(rawbbsf)
                     bbsfSplit = re.split(' ', bbsf)
                     try:
@@ -149,7 +150,7 @@ class ZillowScraper:
         self.df['price/sqft: '] = self.df['prices: ']/self.df['sqft: ']
         self.df['realtor: '] = self.realtorDF
         self.df['zestimate: '] = self.zestimateDF
-
+        print (self.df)
 
     def ZestimateCalc(self, link):
         #Booleans to determine if Zestimate has been found
@@ -164,7 +165,7 @@ class ZillowScraper:
             #Pulls all the items with the same class, this includes random things
             #Filter for the topZillow
         zestimateGroup = zestSoup.find_all('span', class_ = 
-                                                'Text-c11n-8-65-2__sc-aiai24-0 dGfmPL')
+                                                'Text-c11n-8-73-0__sc-aiai24-0 xGfxD')
         for zestimateSample in zestimateGroup:
             if topZillowFound == False:
                 #zestimateSample is the zestimate
@@ -176,15 +177,15 @@ class ZillowScraper:
                 else:
                     continue
             #Found Zillow Estimate in the Top
-            elif topZillowFound == True:
+            elif topZillowFound:
                 break
         #Looking for Zillow Estimate in the Bottom, Not in the TOP
-        if topZillowFound == False:
+        if not topZillowFound:
             zestimateGroup = zestSoup.find_all('span', class_ = 
                                                     'Text-c11n-8-65-2__sc-aiai24-0 eUxM')
             for zestimateSample in zestimateGroup:
                 #Looking for Zillow Estimate in the Bottom
-                if botZillowFound == False:
+                if not botZillowFound:
                     if zestimateSample.text.startswith('$'):
                         botZillowFound = True
                         zestimate = zestimateSample.text
@@ -192,9 +193,9 @@ class ZillowScraper:
                     else:
                         continue
                 #Found Zillow Estimate in the Bottom
-                elif botZillowFound == True:
+                elif botZillowFound:
                     break
-        if topZillowFound == False and botZillowFound == False:
+        if not topZillowFound and not botZillowFound:
             zestimate = '0'    
         zestimate = int(zs.StringReplacement(zestimate))
         time.sleep(1.5)
@@ -210,7 +211,7 @@ class ZillowScraper:
 
             #CSV OUTPUT
         folderPath = os.getcwd() + '\\Output Files\\'
-        self.df.to_csv(folderPath + city + '_DF.csv', index=True)
+        self.df.to_csv(folderPath + (str(date.today())).replace('-','') + '_' + city + '_DF.csv', index=True)
 
 
     def main(self, city):
